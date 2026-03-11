@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — GCAMS</title>
+    <meta name="description" content="Government College Accountant Management System Dashboard">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-layout">
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon"><i class="fas fa-university"></i></div>
+            <div class="sidebar-brand-text"><h3>GCAMS</h3><span>Financial Management</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-nav-label">Main</div>
+            <a class="sidebar-link active" data-module="dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+            <div class="sidebar-nav-label">Modules</div>
+            <a class="sidebar-link" data-module="fees"><i class="fas fa-file-invoice-dollar"></i> Student Fees <span class="badge-nav">12</span></a>
+            <a class="sidebar-link" data-module="payroll"><i class="fas fa-money-check-alt"></i> Payroll</a>
+            <a class="sidebar-link" data-module="budget"><i class="fas fa-chart-pie"></i> Budget & Expenses</a>
+            <a class="sidebar-link" data-module="purchase"><i class="fas fa-shopping-cart"></i> Purchases</a>
+            <a class="sidebar-link" data-module="scholarship"><i class="fas fa-graduation-cap"></i> Scholarships</a>
+            <div class="sidebar-nav-label">Records</div>
+            <a class="sidebar-link" data-module="ledger"><i class="fas fa-book"></i> Ledger</a>
+            <a class="sidebar-link" data-module="audit"><i class="fas fa-clipboard-check"></i> Audit & Reports</a>
+            <div class="sidebar-nav-label">System</div>
+            <a class="sidebar-link" id="logoutLink"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-user">
+                <div class="sidebar-footer-avatar" id="sidebarAvatar">A</div>
+                <div class="sidebar-footer-info"><h4 id="sidebarName">Accountant</h4><span id="sidebarRole">accountant</span></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+                <div class="header-title"><h1 id="headerTitle">Dashboard</h1><p id="headerDate"></p></div>
+            </div>
+            <div class="header-right">
+                <div class="header-search"><i class="fas fa-search"></i><input type="text" placeholder="Search..." id="globalSearch"></div>
+                <button class="header-icon-btn" id="notifBtn"><i class="fas fa-bell"></i><span class="notif-dot"></span></button>
+                <button class="header-user-btn" id="headerUserBtn"><div class="header-user-avatar" id="headerAvatar">A</div><span id="headerUserName">Accountant</span></button>
+            </div>
+        </header>
+
+        <div class="page-content">
+            <!-- ===== DASHBOARD MODULE ===== -->
+            <section class="module-section active" id="mod-dashboard">
+                <div class="page-header"><div class="page-header-text"><h2>Financial Overview</h2><p>Quick summary of college financial status</p></div></div>
+                <div class="stats-grid" id="dashStats"></div>
+                <div class="content-grid-3">
+                    <div class="card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Monthly Revenue</h3></div><div class="card-body"><div class="chart-container h-300"><canvas id="revenueChart"></canvas></div></div></div>
+                    <div class="card"><div class="card-header"><h3><i class="fas fa-bell"></i> Alerts</h3></div><div class="card-body" id="alertsPanel"></div></div>
+                </div>
+                <div class="content-grid-2">
+                    <div class="card"><div class="card-header"><h3><i class="fas fa-exchange-alt"></i> Recent Transactions</h3></div><div class="card-body" id="recentTxns"></div></div>
+                    <div class="card"><div class="card-header"><h3><i class="fas fa-chart-doughnut"></i> Budget Distribution</h3></div><div class="card-body"><div class="chart-container h-250"><canvas id="budgetDoughnut"></canvas></div></div></div>
+                </div>
+            </section>
+
+            <!-- ===== STUDENT FEES MODULE ===== -->
+            <section class="module-section" id="mod-fees">
+                <div class="page-header"><div class="page-header-text"><h2>Student Fee Management</h2><p>Manage student records and fee payments</p></div><div class="page-header-actions"><button class="btn btn-primary" data-modal-target="addStudentModal"><i class="fas fa-plus"></i> Add Student</button><button class="btn btn-secondary" id="exportFeesBtn"><i class="fas fa-download"></i> Export</button></div></div>
+                <div class="filters-bar"><div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" placeholder="Search students..." id="feeSearch"></div><select class="filter-select" id="feeSemFilter"><option value="">All Semesters</option><option>Semester 1</option><option>Semester 2</option><option>Semester 3</option><option>Semester 4</option><option>Semester 5</option><option>Semester 6</option></select><select class="filter-select" id="feeDeptFilter"><option value="">All Departments</option><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option><option>Commerce</option></select><select class="filter-select" id="feeStatusFilter"><option value="">All Status</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="overdue">Overdue</option></select></div>
+                <div class="stats-grid" id="feeStats"></div>
+                <div class="card"><div class="card-header"><h3>Student Fee Records</h3><div class="card-actions"><button class="btn btn-sm btn-secondary" id="printFeesBtn"><i class="fas fa-print"></i> Print</button></div></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table" id="feeTable"><thead><tr><th>Student ID</th><th>Name</th><th>Department</th><th>Semester</th><th>Fee Type</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody id="feeTableBody"></tbody></table></div><div class="pagination"><span id="feePageInfo">Showing 1-10 of 50</span><div class="pagination-btns"><button class="active">1</button><button>2</button><button>3</button><button>→</button></div></div></div></div>
+            </section>
+
+            <!-- ===== PAYROLL MODULE ===== -->
+            <section class="module-section" id="mod-payroll">
+                <div class="page-header"><div class="page-header-text"><h2>Payroll Management</h2><p>Manage faculty and staff salaries</p></div><div class="page-header-actions"><button class="btn btn-primary" data-modal-target="addEmployeeModal"><i class="fas fa-plus"></i> Add Employee</button><button class="btn btn-secondary" id="runPayrollBtn"><i class="fas fa-calculator"></i> Run Payroll</button></div></div>
+                <div class="stats-grid" id="payrollStats"></div>
+                <div class="filters-bar"><div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" placeholder="Search employees..." id="payrollSearch"></div><select class="filter-select"><option value="">All Departments</option><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Administration</option></select><select class="filter-select"><option value="">All Months</option><option>March 2026</option><option>February 2026</option><option>January 2026</option></select></div>
+                <div class="card"><div class="card-header"><h3>Employee Payroll</h3></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Emp ID</th><th>Name</th><th>Designation</th><th>Department</th><th>Basic Pay</th><th>HRA</th><th>DA</th><th>Deductions</th><th>Net Pay</th><th>Actions</th></tr></thead><tbody id="payrollTableBody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- ===== BUDGET MODULE ===== -->
+            <section class="module-section" id="mod-budget">
+                <div class="page-header"><div class="page-header-text"><h2>Budget & Expense Management</h2><p>Track expenses and manage government-allocated budgets</p></div><div class="page-header-actions"><button class="btn btn-primary" data-modal-target="addExpenseModal"><i class="fas fa-plus"></i> Record Expense</button></div></div>
+                <div class="stats-grid" id="budgetStats"></div>
+                <div class="content-grid-2">
+                    <div class="card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Budget vs Spending</h3></div><div class="card-body"><div class="chart-container h-300"><canvas id="budgetBarChart"></canvas></div></div></div>
+                    <div class="card"><div class="card-header"><h3>Budget Utilization</h3></div><div class="card-body" id="budgetUtilPanel"></div></div>
+                </div>
+                <div class="card"><div class="card-header"><h3>Expense Records</h3></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Date</th><th>Category</th><th>Department</th><th>Description</th><th>Amount</th><th>Invoice</th><th>Status</th></tr></thead><tbody id="expenseTableBody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- ===== PURCHASE MODULE ===== -->
+            <section class="module-section" id="mod-purchase">
+                <div class="page-header"><div class="page-header-text"><h2>Purchase & Vendor Management</h2><p>Manage college purchases and vendor information</p></div><div class="page-header-actions"><button class="btn btn-primary" data-modal-target="addPurchaseModal"><i class="fas fa-plus"></i> New Purchase</button><button class="btn btn-secondary" data-modal-target="addVendorModal"><i class="fas fa-store"></i> Add Vendor</button></div></div>
+                <div class="stats-grid" id="purchaseStats"></div>
+                <div class="card mb-24"><div class="card-header"><h3>Purchase Records</h3></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>PO #</th><th>Date</th><th>Vendor</th><th>Category</th><th>Items</th><th>Amount</th><th>Payment</th><th>Actions</th></tr></thead><tbody id="purchaseTableBody"></tbody></table></div></div></div>
+                <div class="card"><div class="card-header"><h3>Vendor Directory</h3></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Vendor ID</th><th>Company</th><th>Contact</th><th>Category</th><th>Total Orders</th><th>Status</th></tr></thead><tbody id="vendorTableBody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- ===== SCHOLARSHIP MODULE ===== -->
+            <section class="module-section" id="mod-scholarship">
+                <div class="page-header"><div class="page-header-text"><h2>Scholarship Management</h2><p>Manage government scholarships and disbursements</p></div><div class="page-header-actions"><button class="btn btn-primary" data-modal-target="addScholarshipModal"><i class="fas fa-plus"></i> Add Record</button></div></div>
+                <div class="stats-grid" id="scholarshipStats"></div>
+                <div class="content-grid-2 mb-24">
+                    <div class="card"><div class="card-header"><h3><i class="fas fa-chart-doughnut"></i> Fund Distribution</h3></div><div class="card-body"><div class="chart-container h-250"><canvas id="scholarshipChart"></canvas></div></div></div>
+                    <div class="card"><div class="card-header"><h3>Disbursement Status</h3></div><div class="card-body" id="scholarshipStatusPanel"></div></div>
+                </div>
+                <div class="card"><div class="card-header"><h3>Scholarship Records</h3></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Student</th><th>Scheme</th><th>Category</th><th>Amount</th><th>Eligibility</th><th>Status</th><th>Actions</th></tr></thead><tbody id="scholarshipTableBody"></tbody></table></div></div></div>
+            </section>
+
+            <!-- ===== LEDGER MODULE ===== -->
+            <section class="module-section" id="mod-ledger">
+                <div class="page-header"><div class="page-header-text"><h2>Financial Records & Ledger</h2><p>Maintain official financial records and bank transactions</p></div><div class="page-header-actions"><button class="btn btn-primary" data-modal-target="newLedgerEntryModal"><i class="fas fa-plus"></i> New Entry</button><button class="btn btn-secondary" onclick="generateStatement()"><i class="fas fa-file-pdf"></i> Generate Statement</button></div></div>
+                <div class="tabs"><button class="tab-btn active" data-tab="ledgerTab">General Ledger</button><button class="tab-btn" data-tab="cashbookTab">Cash Book</button><button class="tab-btn" data-tab="bankTab">Bank Transactions</button></div>
+                <div class="tab-pane active" id="ledgerTab">
+                    <div class="card"><div class="card-header"><h3>General Ledger</h3></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Date</th><th>Voucher #</th><th>Particulars</th><th>Debit (₹)</th><th>Credit (₹)</th><th>Balance (₹)</th></tr></thead><tbody id="ledgerTableBody"></tbody></table></div></div></div>
+                </div>
+                <div class="tab-pane" id="cashbookTab">
+                    <div class="card"><div class="card-header"><h3>Cash Book</h3></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Date</th><th>Receipt #</th><th>Description</th><th>Cash In (₹)</th><th>Cash Out (₹)</th><th>Balance (₹)</th></tr></thead><tbody id="cashbookTableBody"></tbody></table></div></div></div>
+                </div>
+                <div class="tab-pane" id="bankTab">
+                    <div class="card"><div class="card-header"><h3>Bank Transactions</h3></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Date</th><th>Txn ID</th><th>Bank</th><th>Type</th><th>Amount (₹)</th><th>Balance (₹)</th></tr></thead><tbody id="bankTableBody"></tbody></table></div></div></div>
+                </div>
+            </section>
+
+            <!-- ===== AUDIT MODULE ===== -->
+            <section class="module-section" id="mod-audit">
+                <div class="page-header"><div class="page-header-text"><h2>Audit & Reporting</h2><p>Generate audit-ready reports and financial summaries</p></div><div class="page-header-actions"><button class="btn btn-primary" onclick="generateAuditReport()"><i class="fas fa-file-pdf"></i> Generate Report</button></div></div>
+                <div class="stats-grid" id="auditStats"></div>
+                <div class="content-grid-2 mb-24">
+                    <div class="card"><div class="card-header"><h3><i class="fas fa-chart-line"></i> Revenue vs Expenses</h3></div><div class="card-body"><div class="chart-container h-300"><canvas id="auditLineChart"></canvas></div></div></div>
+                    <div class="card"><div class="card-header"><h3>Quick Reports</h3></div><div class="card-body" id="quickReportsPanel"></div></div>
+                </div>
+                <div class="card"><div class="card-header"><h3>Transaction History Log</h3><div class="card-actions"><select class="filter-select" style="min-width:120px"><option>This Month</option><option>Last Month</option><option>This Year</option></select></div></div><div class="card-body p-0"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Timestamp</th><th>Type</th><th>Description</th><th>Amount (₹)</th><th>User</th><th>Status</th></tr></thead><tbody id="auditLogBody"></tbody></table></div></div></div>
+            </section>
+        </div><!-- /page-content -->
+    </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<!-- ===== MODALS ===== -->
+<div class="modal-overlay" id="addStudentModal"><div class="modal"><div class="modal-header"><h3>Add Student Record</h3><button class="modal-close" data-modal-close="addStudentModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Student ID</label><input type="text" placeholder="e.g. STU-2026-001"></div><div class="form-group"><label>Full Name</label><input type="text" placeholder="Enter student name"></div></div><div class="form-row"><div class="form-group"><label>Department</label><select><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Civil</option><option>Commerce</option></select></div><div class="form-group"><label>Semester</label><select><option>Semester 1</option><option>Semester 2</option><option>Semester 3</option><option>Semester 4</option><option>Semester 5</option><option>Semester 6</option></select></div></div><div class="form-row"><div class="form-group"><label>Fee Type</label><select><option>Tuition Fee</option><option>Exam Fee</option><option>Admission Fee</option><option>Lab Fee</option></select></div><div class="form-group"><label>Amount (₹)</label><input type="number" placeholder="Enter amount"></div></div></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="addStudentModal">Cancel</button><button class="btn btn-primary"><i class="fas fa-save"></i> Save Record</button></div></div></div>
+
+<div class="modal-overlay" id="addEmployeeModal"><div class="modal"><div class="modal-header"><h3>Add Employee</h3><button class="modal-close" data-modal-close="addEmployeeModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Employee ID</label><input type="text" placeholder="e.g. EMP-001"></div><div class="form-group"><label>Full Name</label><input type="text" placeholder="Enter name"></div></div><div class="form-row"><div class="form-group"><label>Designation</label><select><option>Professor</option><option>Associate Professor</option><option>Assistant Professor</option><option>Lab Assistant</option><option>Clerk</option></select></div><div class="form-group"><label>Department</label><select><option>Computer Science</option><option>Electronics</option><option>Mechanical</option><option>Administration</option></select></div></div><div class="form-row"><div class="form-group"><label>Basic Pay (₹)</label><input type="number" placeholder="Enter basic pay"></div><div class="form-group"><label>HRA (₹)</label><input type="number" placeholder="HRA amount"></div></div><div class="form-row"><div class="form-group"><label>DA (₹)</label><input type="number" placeholder="DA amount"></div><div class="form-group"><label>Travel Allowance (₹)</label><input type="number" placeholder="TA amount"></div></div></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="addEmployeeModal">Cancel</button><button class="btn btn-primary"><i class="fas fa-save"></i> Save Employee</button></div></div></div>
+
+<div class="modal-overlay" id="addExpenseModal"><div class="modal"><div class="modal-header"><h3>Record Expense</h3><button class="modal-close" data-modal-close="addExpenseModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Category</label><select><option>Infrastructure</option><option>Lab Equipment</option><option>Library</option><option>Maintenance</option><option>Utilities</option><option>Events</option></select></div><div class="form-group"><label>Department</label><select><option>General</option><option>Computer Science</option><option>Electronics</option><option>Mechanical</option></select></div></div><div class="form-row"><div class="form-group"><label>Description</label><input type="text" placeholder="Expense description"></div><div class="form-group"><label>Amount (₹)</label><input type="number" placeholder="Enter amount"></div></div><div class="form-group"><label>Upload Invoice</label><input type="file" accept=".pdf,.jpg,.png"></div></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="addExpenseModal">Cancel</button><button class="btn btn-primary"><i class="fas fa-save"></i> Save Expense</button></div></div></div>
+
+<div class="modal-overlay" id="addPurchaseModal"><div class="modal"><div class="modal-header"><h3>New Purchase Order</h3><button class="modal-close" data-modal-close="addPurchaseModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Vendor</label><select><option>Select vendor...</option><option>Office Supplies Co.</option><option>Lab Instruments Ltd.</option><option>Tech Solutions</option></select></div><div class="form-group"><label>Category</label><select><option>Equipment</option><option>Furniture</option><option>Stationery</option><option>IT Hardware</option><option>Lab Supplies</option></select></div></div><div class="form-row"><div class="form-group"><label>Items Description</label><input type="text" placeholder="Describe items"></div><div class="form-group"><label>Amount (₹)</label><input type="number" placeholder="Total amount"></div></div><div class="form-group"><label>Upload Invoice</label><input type="file" accept=".pdf,.jpg,.png"></div></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="addPurchaseModal">Cancel</button><button class="btn btn-primary"><i class="fas fa-save"></i> Create PO</button></div></div></div>
+
+<div class="modal-overlay" id="addVendorModal"><div class="modal"><div class="modal-header"><h3>Add Vendor</h3><button class="modal-close" data-modal-close="addVendorModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Company Name</label><input type="text" placeholder="Vendor company name"></div><div class="form-group"><label>Contact Person</label><input type="text" placeholder="Contact name"></div></div><div class="form-row"><div class="form-group"><label>Phone</label><input type="tel" placeholder="Phone number"></div><div class="form-group"><label>Email</label><input type="email" placeholder="vendor@email.com"></div></div><div class="form-group"><label>Category</label><select><option>Equipment</option><option>Furniture</option><option>Stationery</option><option>IT Services</option></select></div></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="addVendorModal">Cancel</button><button class="btn btn-primary"><i class="fas fa-save"></i> Save Vendor</button></div></div></div>
+
+<div class="modal-overlay" id="addScholarshipModal"><div class="modal"><div class="modal-header"><h3>Add Scholarship Record</h3><button class="modal-close" data-modal-close="addScholarshipModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Student Name</label><input type="text" placeholder="Enter student name"></div><div class="form-group"><label>Scholarship Scheme</label><select><option>National Merit Scholarship</option><option>SC/ST Scholarship</option><option>OBC Scholarship</option><option>Minority Scholarship</option><option>State Merit Scholarship</option></select></div></div><div class="form-row"><div class="form-group"><label>Category</label><select><option>Merit Based</option><option>Need Based</option><option>Government</option></select></div><div class="form-group"><label>Amount (₹)</label><input type="number" placeholder="Scholarship amount"></div></div></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="addScholarshipModal">Cancel</button><button class="btn btn-primary"><i class="fas fa-save"></i> Save Record</button></div></div></div>
+
+<!-- New Ledger Entry Modal -->
+<div class="modal-overlay" id="newLedgerEntryModal"><div class="modal"><div class="modal-header"><h3>New Ledger Entry</h3><button class="modal-close" data-modal-close="newLedgerEntryModal"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Date</label><input type="date"></div><div class="form-group"><label>Voucher #</label><input type="text" placeholder="e.g. VCH-0452"></div></div><div class="form-group"><label>Particulars</label><input type="text" placeholder="Description of transaction"></div><div class="form-row"><div class="form-group"><label>Debit (₹)</label><input type="number" placeholder="0"></div><div class="form-group"><label>Credit (₹)</label><input type="number" placeholder="0"></div></div><div class="form-group"><label>Entry Type</label><select><option>General Ledger</option><option>Cash Book</option><option>Bank Transaction</option></select></div></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="newLedgerEntryModal">Cancel</button><button class="btn btn-primary" data-modal-close="newLedgerEntryModal"><i class="fas fa-save"></i> Save Entry</button></div></div></div>
+
+<!-- Generic Detail View Modal -->
+<div class="modal-overlay" id="detailViewModal"><div class="modal"><div class="modal-header"><h3 id="detailModalTitle">Details</h3><button class="modal-close" data-modal-close="detailViewModal"><i class="fas fa-times"></i></button></div><div class="modal-body" id="detailModalBody"></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="detailViewModal">Close</button><button class="btn btn-primary" id="detailModalAction" style="display:none"><i class="fas fa-download"></i> Download</button></div></div></div>
+
+<!-- Salary Slip Modal -->
+<div class="modal-overlay" id="salarySlipModal"><div class="modal"><div class="modal-header"><h3>Salary Slip</h3><button class="modal-close" data-modal-close="salarySlipModal"><i class="fas fa-times"></i></button></div><div class="modal-body" id="salarySlipBody"></div><div class="modal-footer"><button class="btn btn-secondary" data-modal-close="salarySlipModal">Close</button><button class="btn btn-primary" onclick="downloadSalarySlip()"><i class="fas fa-download"></i> Download PDF</button></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/fees.js"></script>
+<script src="js/payroll.js"></script>
+<script src="js/budget.js"></script>
+<script src="js/purchase.js"></script>
+<script src="js/scholarship.js"></script>
+<script src="js/ledger.js"></script>
+<script src="js/audit.js"></script>
+</body>
+</html>

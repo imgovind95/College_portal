@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — College Accountant Management System</title>
+    <meta name="description" content="Secure login portal for the Government College Accountant Management System. Manage fees, payroll, budgets, and financial records.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        /* === Compact Login — fits in single viewport === */
+        .login-body { min-height: 100vh; overflow: hidden; }
+        .login-container { max-height: 100vh; }
+        .login-form-panel { padding: 24px 36px; }
+        .login-form-header { margin-bottom: 14px; }
+        .login-form-header h2 { font-size: 1.3rem; margin-bottom: 2px; }
+        .login-form-header p { font-size: 0.82rem; }
+        .login-logo-sm { width: 42px; height: 42px; font-size: 18px; margin-bottom: 10px; }
+        .login-form .form-group { margin-bottom: 10px; }
+        .login-form .form-group label { margin-bottom: 4px; font-size: 0.78rem; }
+        .login-form .form-group input,
+        .login-form .form-group select { padding: 8px 12px; font-size: 0.85rem; }
+        .login-form .form-row-between { margin-bottom: 12px; }
+        .btn-login { padding: 10px; font-size: 0.88rem; }
+        .login-footer-text { margin-top: 10px; }
+        .login-footer-text p { font-size: 0.72rem; }
+
+        /* Divider */
+        .auth-divider { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+        .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .auth-divider span { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Google button container */
+        .google-btn-container {
+            width: 100%; display: flex; justify-content: center; min-height: 44px;
+        }
+        .google-btn-container > div { width: 100% !important; }
+        .google-btn-container iframe { border-radius: var(--radius) !important; }
+
+        /* Auth tab switcher */
+        .auth-tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 12px; }
+        .auth-tab {
+            flex: 1; padding: 8px 0; text-align: center; font-size: 0.82rem; font-weight: 600;
+            color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+            margin-bottom: -2px; transition: all 0.2s;
+        }
+        .auth-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .auth-tab:hover:not(.active) { color: var(--text-body); }
+
+        /* Auth panels */
+        .auth-panel { display: none; }
+        .auth-panel.active { display: block; }
+
+        /* Error/success messages */
+        .auth-message {
+            font-size: 0.78rem; text-align: center; margin-top: 8px; padding: 6px 10px;
+            border-radius: var(--radius-sm); display: none;
+        }
+        .auth-message.error { color: #dc2626; background: #fef2f2; display: block; }
+        .auth-message.success { color: #16a34a; background: #f0fdf4; display: block; }
+    </style>
+</head>
+<body class="login-body">
+
+    <div class="login-container">
+        <!-- Left decorative panel -->
+        <div class="login-hero">
+            <div class="login-hero-overlay"></div>
+            <div class="login-hero-content">
+                <div class="login-hero-icon">
+                    <i class="fas fa-university"></i>
+                </div>
+                <h1>Government College<br>Accountant Management System</h1>
+                <p>Streamlined financial management for transparent and efficient college administration.</p>
+                <div class="login-hero-features">
+                    <div class="hero-feature"><i class="fas fa-check-circle"></i> Fee Collection & Tracking</div>
+                    <div class="hero-feature"><i class="fas fa-check-circle"></i> Payroll & Salary Management</div>
+                    <div class="hero-feature"><i class="fas fa-check-circle"></i> Budget Utilization Reports</div>
+                    <div class="hero-feature"><i class="fas fa-check-circle"></i> Audit-Ready Financials</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right form panel -->
+        <div class="login-form-panel">
+            <div class="login-form-wrapper">
+                <div class="login-form-header">
+                    <div class="login-logo-sm">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <h2 id="authTitle">Welcome Back</h2>
+                    <p id="authSubtitle">Sign in to access your financial dashboard</p>
+                </div>
+
+                <!-- Google Sign-In Button (rendered by Google Identity Services) -->
+                <div class="google-btn-container" id="googleSignInBtn"></div>
+
+                <div class="auth-divider"><span>or</span></div>
+
+                <!-- Tabs: Sign In / Create Account -->
+                <div class="auth-tabs">
+                    <div class="auth-tab active" data-panel="loginPanel">Sign In</div>
+                    <div class="auth-tab" data-panel="registerPanel">Create Account</div>
+                </div>
+
+                <!-- LOGIN FORM -->
+                <div class="auth-panel active" id="loginPanel">
+                    <form id="loginForm" class="login-form" autocomplete="off">
+                        <div class="form-group">
+                            <label for="loginEmail"><i class="fas fa-envelope"></i> Email Address</label>
+                            <input type="email" id="loginEmail" placeholder="accountant@college.edu" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword"><i class="fas fa-lock"></i> Password</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                                <button type="button" class="password-toggle" id="loginPwToggle" aria-label="Toggle password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginRole"><i class="fas fa-user-shield"></i> Login As</label>
+                            <select id="loginRole" required>
+                                <option value="" disabled selected>Select your role</option>
+                                <option value="accountant">Accountant</option>
+                                <option value="admin">Administrator</option>
+                                <option value="auditor">Auditor</option>
+                            </select>
+                        </div>
+                        <div class="form-row-between">
+                            <label class="checkbox-label"><input type="checkbox" id="rememberMe"> Remember me</label>
+                            <a href="#" class="forgot-link">Forgot password?</a>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-login" id="loginBtn">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
+                        <div id="loginMessage" class="auth-message"></div>
+                    </form>
+                </div>
+
+                <!-- REGISTER FORM -->
+                <div class="auth-panel" id="registerPanel">
+                    <form id="registerForm" class="login-form" autocomplete="off">
+                        <div class="form-group">
+                            <label for="regName"><i class="fas fa-user"></i> Full Name</label>
+                            <input type="text" id="regName" placeholder="Enter your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regEmail"><i class="fas fa-envelope"></i> Email Address</label>
+                            <input type="email" id="regEmail" placeholder="you@college.edu" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPassword"><i class="fas fa-lock"></i> Password</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="regPassword" placeholder="Min. 8 characters" minlength="8" required>
+                                <button type="button" class="password-toggle" id="regPwToggle" aria-label="Toggle password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="regRole"><i class="fas fa-user-shield"></i> Register As</label>
+                            <select id="regRole" required>
+                                <option value="accountant">Accountant</option>
+                                <option value="admin">Administrator</option>
+                                <option value="auditor">Auditor</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-login" id="registerBtn">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+                        <div id="registerMessage" class="auth-message"></div>
+                    </form>
+                </div>
+
+                <div class="login-footer-text">
+                    <p>Authorized personnel only. All activities are logged.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/api';
+
+        // ==========================================
+        // Tab Switching
+        // ==========================================
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.panel).classList.add('active');
+
+            const title = document.getElementById('authTitle');
+            const sub = document.getElementById('authSubtitle');
+            if (tab.dataset.panel === 'registerPanel') {
+                title.textContent = 'Create Account';
+                sub.textContent = 'Register to access the financial dashboard';
+            } else {
+                title.textContent = 'Welcome Back';
+                sub.textContent = 'Sign in to access your financial dashboard';
+            }
+        }
+
+        // ==========================================
+        // Password Toggle
+        // ==========================================
+        function togglePassword(fieldId, btn) {
+            const pw = document.getElementById(fieldId);
+            const icon = btn.querySelector('i');
+            if (pw.type === 'password') {
+                pw.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                pw.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        // ==========================================
+        // Show Message
+        // ==========================================
+        function showMessage(id, text, type) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = 'auth-message ' + type;
+        }
+
+        // ==========================================
+        // LOGIN
+        // ==========================================
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const role = document.getElementById('loginRole').value;
+            const btn = document.getElementById('loginBtn');
+
+            if (!email || !password) { showMessage('loginMessage', 'Please enter email and password', 'error'); return; }
+            if (!role) { showMessage('loginMessage', 'Please select your role', 'error'); return; }
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, role })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Login failed');
+
+                localStorage.setItem('gcams_token', data.token);
+                localStorage.setItem('gcams_user', JSON.stringify(data.user));
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                showMessage('loginMessage', err.message, 'error');
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                btn.disabled = false;
+            }
+        });
+
+        // ==========================================
+        // REGISTER
+        // ==========================================
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const role = document.getElementById('regRole').value;
+            const btn = document.getElementById('registerBtn');
+
+            if (!name || !email || !password) { showMessage('registerMessage', 'All fields are required', 'error'); return; }
+            if (password.length < 8) { showMessage('registerMessage', 'Password must be at least 8 characters', 'error'); return; }
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Registration failed');
+
+                localStorage.setItem('gcams_token', data.token);
+                localStorage.setItem('gcams_user', JSON.stringify(data.user));
+                window.location.href = 'dashboard.html';
+            } catch (err) {
+                showMessage('registerMessage', err.message, 'error');
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+                btn.disabled = false;
+            }
+        });
+
+        // ==========================================
+        // GOOGLE SIGN-IN
+        // ==========================================
+        // Callback from Google Identity Services
+        function handleGoogleCredential(response) {
+            fetch(`${API_BASE}/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential: response.credential })
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok) throw new Error(data.message || 'Google login failed');
+                localStorage.setItem('gcams_token', data.token);
+                localStorage.setItem('gcams_user', JSON.stringify(data.user));
+                window.location.href = 'dashboard.html';
+            })
+            .catch(err => {
+                showMessage('loginMessage', err.message, 'error');
+            });
+        }
+
+        // Initialize Google Sign-In with renderButton (popup mode — works reliably)
+        function initGoogleSignIn(clientId) {
+            if (typeof google === 'undefined' || !google.accounts) {
+                // GIS library not loaded yet, retry in 500ms
+                setTimeout(() => initGoogleSignIn(clientId), 500);
+                return;
+            }
+            google.accounts.id.initialize({
+                client_id: clientId,
+                callback: handleGoogleCredential,
+                auto_select: false,
+                ux_mode: 'popup',
+            });
+            google.accounts.id.renderButton(
+                document.getElementById('googleSignInBtn'),
+                {
+                    type: 'standard',
+                    theme: 'outline',
+                    size: 'large',
+                    text: 'continue_with',
+                    shape: 'rectangular',
+                    width: 360,
+                }
+            );
+        }
+
+        // Load Google Client ID from backend and then render the button
+        fetch(`${API_BASE}/auth/google-client-id`)
+            .then(r => r.json())
+            .then(d => {
+                if (d.clientId) {
+                    initGoogleSignIn(d.clientId);
+                }
+            })
+            .catch(() => { /* Google auth will just not work if no client ID */ });
+
+        // ==========================================
+        // Event Listeners (no inline onclick — CSP safe)
+        // ==========================================
+
+        // Auth tab switching
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', function() { switchAuthTab(this); });
+        });
+
+        // Password toggle buttons
+        document.getElementById('loginPwToggle').addEventListener('click', function() {
+            togglePassword('loginPassword', this);
+        });
+        document.getElementById('regPwToggle').addEventListener('click', function() {
+            togglePassword('regPassword', this);
+        });
+    </script>
+</body>
+</html>
