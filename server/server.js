@@ -115,12 +115,15 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// START SERVER
+// START SERVER (Local/Render) or EXPORT (Vercel)
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
-const startServer = async () => {
-    await connectDB();
+// Connect to DB once when the server starts
+connectDB();
+
+if (process.env.NODE_ENV !== 'test' && require.main === module) {
+    // Running locally or on standard node environments (like Render)
     app.listen(PORT, () => {
         console.log(`\n🚀 GCAMS Server running on port ${PORT}`);
         console.log(`📁 Frontend: http://localhost:${PORT}`);
@@ -128,6 +131,7 @@ const startServer = async () => {
         console.log(`🛡️  Security: Helmet, CORS, Rate Limiting, JWT Auth`);
         console.log(`📊 Mode: ${process.env.NODE_ENV || 'development'}\n`);
     });
-};
+}
 
-startServer();
+// Export for Vercel Serverless Functions
+module.exports = app;
