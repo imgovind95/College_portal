@@ -16,63 +16,79 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
-// Trust proxy for Vercel and Render (required for express-rate-limit)
+// 1. Trust proxy for Render/Vercel (Must be before rate limiter)
+// This fixes the 'X-Forwarded-For' ValidationError in your logs
 app.set('trust proxy', 1);
 
 // ==========================================
 // SECURITY MIDDLEWARE
 // ==========================================
 
-// Helmet — sets secure HTTP headers (CSP, HSTS, X-Frame-Options, etc.)
+// Helmet — Updated for Google Auth compatibility
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://accounts.google.com", "https://apis.google.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://accounts.google.com", "https://apis.google.com"],
             scriptSrcAttr: ["'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://accounts.google.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "https://accounts.google.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://accounts.google.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "https:", "https://lh3.googleusercontent.com"],
+            connectSrc: ["'self'", "https://accounts.google.com", "https://googleidtoolkit.googleapis.com"],
             frameSrc: ["'self'", "https://accounts.google.com"],
         }
     },
-    crossOriginOpenerPolicy: false,
+    // Required for Google One Tap / Sign-in Popups
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
     crossOriginEmbedderPolicy: false,
 }));
 
-// CORS — only allow specific frontend origins
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(s => s.trim());
+// CORS — Updated to dynamically allow Render and localhost
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://college-portal-e3hf.onrender.com' // Your specific Render frontend
+];
+
+// Add any additional origins from .env
+if (process.env.CORS_ORIGIN) {
+    process.env.CORS_ORIGIN.split(',').forEach(s => allowedOrigins.push(s.trim()));
+}
+
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, Vercel edge functions proxying to themselves)
+        // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return callback(null, true);
         
-        // Check if origin matches allowed origins or is a Vercel deployment URL
-        if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-            return callback(null, true);
+        const isAllowed = allowedOrigins.includes(origin) || 
+                         origin.endsWith('.vercel.app') || 
+                         origin.endsWith('.onrender.com');
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            // Logging the blocked origin helps with debugging
+            console.warn(`CORS blocked request from: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
         }
-        return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-forwarded-for'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
+
+
 
 // Rate limiting — 100 requests per 15 minutes per IP
 app.use('/api', apiLimiter);
 
-// Body parsing with size limits (prevent payload attacks)
+// Body parsing
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-
-// Cookie parser for JWT cookies
 app.use(cookieParser());
-
-// Gzip compression for performance
 app.use(compression());
 
-// HTTP request logging
+// Logging
 if (process.env.NODE_ENV !== 'production') {
     app.use(morgan('dev'));
 } else {
@@ -80,7 +96,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // ==========================================
-// STATIC FILES (Frontend)
+// STATIC FILES
 // ==========================================
 app.use(express.static(path.join(__dirname, '..'), {
     maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
@@ -103,40 +119,41 @@ app.use('/api/audit', require('./routes/auditRoutes'));
 // ERROR HANDLING
 // ==========================================
 
-// 404 handler for API routes
 app.use('/api/*', (req, res) => {
     res.status(404).json({ message: 'API endpoint not found' });
 });
 
-// Global error handler
+// Global error handler — improved for debugging
 app.use((err, req, res, next) => {
-    console.error('Server error:', err.stack);
+    // Log the full error to your server console (Render logs)
+    console.error('SERVER_ERROR_LOG:', {
+        message: err.message,
+        stack: err.stack,
+        origin: req.headers.origin
+    });
+
     const statusCode = err.statusCode || 500;
+    
+    // Send a cleaner message to the client
     res.status(statusCode).json({
-        message: process.env.NODE_ENV === 'production'
+        message: (process.env.NODE_ENV === 'production' && statusCode === 500)
             ? 'Internal server error'
             : err.message,
     });
 });
 
 // ==========================================
-// START SERVER (Local/Render) or EXPORT (Vercel)
+// START SERVER
 // ==========================================
 const PORT = process.env.PORT || 5000;
 
-// Connect to DB once when the server starts
 connectDB();
 
 if (process.env.NODE_ENV !== 'test' && require.main === module) {
-    // Running locally or on standard node environments (like Render)
     app.listen(PORT, () => {
         console.log(`\n🚀 GCAMS Server running on port ${PORT}`);
-        console.log(`📁 Frontend: http://localhost:${PORT}`);
-        console.log(`🔑 API Base: http://localhost:${PORT}/api`);
-        console.log(`🛡️  Security: Helmet, CORS, Rate Limiting, JWT Auth`);
         console.log(`📊 Mode: ${process.env.NODE_ENV || 'development'}\n`);
     });
 }
 
-// Export for Vercel Serverless Functions
 module.exports = app;
