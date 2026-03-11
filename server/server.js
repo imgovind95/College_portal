@@ -16,6 +16,9 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
+// Trust proxy for Vercel and Render (required for express-rate-limit)
+app.set('trust proxy', 1);
+
 // ==========================================
 // SECURITY MIDDLEWARE
 // ==========================================
@@ -42,16 +45,18 @@ app.use(helmet({
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(s => s.trim());
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, etc.)
+        // Allow requests with no origin (mobile apps, curl, Vercel edge functions proxying to themselves)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
+        
+        // Check if origin matches allowed origins or is a Vercel deployment URL
+        if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
             return callback(null, true);
         }
         return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-forwarded-for'],
 }));
 
 // Rate limiting — 100 requests per 15 minutes per IP
