@@ -98,7 +98,7 @@ if (process.env.NODE_ENV !== 'production') {
 // ==========================================
 // STATIC FILES
 // ==========================================
-app.use(express.static(path.join(__dirname, '..'), {
+app.use(express.static(path.join(__dirname, '../'), {
     maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
     etag: true,
 }));
