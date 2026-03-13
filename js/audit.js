@@ -6,7 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAuditStats();
     renderAuditLineChart();
     renderQuickReports();
-    renderAuditLog();
+    renderAuditLog('this_month');
+
+    // Time filter for Transaction History Log
+    const timeFilter = document.getElementById('auditTimeFilter');
+    if (timeFilter) {
+        timeFilter.addEventListener('change', () => {
+            renderAuditLog(timeFilter.value);
+        });
+    }
 });
 
 function renderAuditStats() {
@@ -63,24 +71,57 @@ function renderQuickReports() {
     `).join('');
 }
 
-function renderAuditLog() {
+const auditLogData = [
+    // March 2026 (This Month)
+    { time: '2026-03-10 14:32', type: 'Fee Collection', desc: 'Processed fee payment for STU-2026-001', amount: 24500, user: 'accountant@college.edu', status: 'completed' },
+    { time: '2026-03-10 11:15', type: 'Payroll', desc: 'Generated salary slips for March 2026', amount: 1860000, user: 'accountant@college.edu', status: 'completed' },
+    { time: '2026-03-09 16:45', type: 'Purchase', desc: 'Approved PO-2026-042 for IT hardware', amount: 185000, user: 'admin@college.edu', status: 'approved' },
+    { time: '2026-03-08 10:20', type: 'Scholarship', desc: 'Disbursed National Merit scholarship batch', amount: 75000, user: 'accountant@college.edu', status: 'completed' },
+    { time: '2026-03-07 09:00', type: 'Budget', desc: 'Updated budget allocation for Q4', amount: 0, user: 'admin@college.edu', status: 'modified' },
+    { time: '2026-03-06 15:30', type: 'Expense', desc: 'Recorded electricity bill payment', amount: 48000, user: 'accountant@college.edu', status: 'completed' },
+    // February 2026 (Last Month)
+    { time: '2026-02-28 16:00', type: 'Payroll', desc: 'Generated salary slips for February 2026', amount: 1860000, user: 'accountant@college.edu', status: 'completed' },
+    { time: '2026-02-25 10:30', type: 'Fee Collection', desc: 'Processed fee payment for STU-2026-008', amount: 24500, user: 'accountant@college.edu', status: 'completed' },
+    { time: '2026-02-22 14:15', type: 'Purchase', desc: 'Approved PO-2026-038 for library books', amount: 58000, user: 'admin@college.edu', status: 'approved' },
+    { time: '2026-02-18 11:45', type: 'Expense', desc: 'Paid internet and phone bills', amount: 32000, user: 'accountant@college.edu', status: 'completed' },
+    { time: '2026-02-15 09:20', type: 'Scholarship', desc: 'Disbursed SC/ST scholarship batch', amount: 60000, user: 'accountant@college.edu', status: 'completed' },
+    // January 2026
+    { time: '2026-01-31 15:00', type: 'Payroll', desc: 'Generated salary slips for January 2026', amount: 1860000, user: 'accountant@college.edu', status: 'completed' },
+    { time: '2026-01-20 12:00', type: 'Budget', desc: 'Received government budget allocation', amount: 5000000, user: 'admin@college.edu', status: 'approved' },
+    { time: '2026-01-15 10:30', type: 'Purchase', desc: 'Approved PO-2026-035 for lab equipment', amount: 96000, user: 'admin@college.edu', status: 'approved' },
+    { time: '2026-01-10 14:00', type: 'Fee Collection', desc: 'Semester 2 fee collection started', amount: 248000, user: 'accountant@college.edu', status: 'completed' },
+];
+
+function renderAuditLog(filter) {
     const tbody = document.getElementById('auditLogBody');
     if (!tbody) return;
-    const data = [
-        { time: '2026-03-10 14:32', type: 'Fee Collection', desc: 'Processed fee payment for STU-2026-001', amount: 24500, user: 'accountant@college.edu', status: 'completed' },
-        { time: '2026-03-10 11:15', type: 'Payroll', desc: 'Generated salary slips for March 2026', amount: 1860000, user: 'accountant@college.edu', status: 'completed' },
-        { time: '2026-03-09 16:45', type: 'Purchase', desc: 'Approved PO-2026-042 for IT hardware', amount: 185000, user: 'admin@college.edu', status: 'approved' },
-        { time: '2026-03-08 10:20', type: 'Scholarship', desc: 'Disbursed National Merit scholarship batch', amount: 75000, user: 'accountant@college.edu', status: 'completed' },
-        { time: '2026-03-07 09:00', type: 'Budget', desc: 'Updated budget allocation for Q4', amount: 0, user: 'admin@college.edu', status: 'modified' },
-        { time: '2026-03-06 15:30', type: 'Expense', desc: 'Recorded electricity bill payment', amount: 48000, user: 'accountant@college.edu', status: 'completed' }
-    ];
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let filtered = auditLogData;
+    if (filter === 'this_month') {
+        filtered = auditLogData.filter(r => {
+            const d = new Date(r.time);
+            return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        });
+    } else if (filter === 'last_month') {
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        filtered = auditLogData.filter(r => {
+            const d = new Date(r.time);
+            return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear;
+        });
+    }
+    // 'this_year' shows all (all data is from current year)
+
     const badge = s => ({ completed: 'badge-success', approved: 'badge-info', modified: 'badge-warning' })[s] || 'badge-muted';
-    tbody.innerHTML = data.map(r => `<tr>
+    tbody.innerHTML = filtered.length ? filtered.map(r => `<tr>
         <td style="white-space:nowrap">${r.time}</td><td><span class="badge badge-primary">${r.type}</span></td><td>${r.desc}</td>
         <td class="fw-600">${r.amount ? '₹' + r.amount.toLocaleString('en-IN') : '—'}</td>
         <td style="font-size:0.78rem">${r.user}</td>
         <td><span class="badge ${badge(r.status)}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span></td>
-    </tr>`).join('');
+    </tr>`).join('') : '<tr><td colspan="6" class="text-center text-muted" style="padding:24px">No transactions found for this period</td></tr>';
 }
 
 // Download specific report
