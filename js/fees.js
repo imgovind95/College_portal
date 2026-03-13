@@ -85,7 +85,12 @@ function renderFeeTable(students) {
         <td><strong>${escapeHtml(r.studentId)}</strong></td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.department)}</td><td>${escapeHtml(r.semester)}</td>
         <td>${escapeHtml(r.feeType)}</td><td class="fw-600">₹${r.amount.toLocaleString('en-IN')}</td>
         <td><span class="badge ${badge(r.status)}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span></td>
-        <td><button class="btn btn-xs btn-primary" onclick="viewReceipt(${i})">Receipt</button></td>
+        <td>
+            <div style="display:flex;gap:8px;">
+                ${r.status !== 'paid' ? `<button class="btn btn-xs btn-success" title="Record Payment" onclick="openPaymentModal(${i})"><i class="fas fa-wallet"></i> Pay</button>` : ''}
+                <button class="btn btn-xs btn-primary" title="View Receipt" onclick="viewReceipt(${i})">Receipt</button>
+            </div>
+        </td>
     </tr>`).join('');
 }
 
@@ -143,6 +148,57 @@ This is a system-generated receipt.
     };
     openModal('detailViewModal');
 }
+
+// Open Payment Modal
+function openPaymentModal(index) {
+    const data = window._currentFeeList || window._feeStudents || getDefaultFeeData();
+    const r = data[index];
+    if (!r) return;
+    
+    document.getElementById('payModalStudentName').textContent = r.name;
+    document.getElementById('payModalStudentId').textContent = r.studentId;
+    document.getElementById('payModalFeeType').textContent = r.feeType;
+    document.getElementById('payModalAmount').textContent = `₹${r.amount.toLocaleString('en-IN')}`;
+    document.getElementById('payModalRecordId').value = r._id;
+    
+    openModal('recordPaymentModal');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+    if (confirmPaymentBtn) {
+        confirmPaymentBtn.addEventListener('click', async () => {
+            const recordId = document.getElementById('payModalRecordId').value;
+            if (!recordId) return;
+            
+            confirmPaymentBtn.disabled = true;
+            confirmPaymentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            try {
+                // Update fee status via existing PUT API
+                await api(`/fees/${recordId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'paid' })
+                });
+                
+                closeModal('recordPaymentModal');
+                
+                // Show success message and reload table
+                const msg = document.createElement('div');
+                msg.innerHTML = '<div style="position:fixed;top:20px;right:20px;background:var(--success);color:#fff;padding:12px 20px;border-radius:6px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);"><i class="fas fa-check-circle"></i> Payment Recorded Successfully!</div>';
+                document.body.appendChild(msg);
+                setTimeout(() => msg.remove(), 3000);
+                
+                loadFees();
+            } catch (err) {
+                alert('Failed to record payment: ' + err.message);
+            } finally {
+                confirmPaymentBtn.disabled = false;
+                confirmPaymentBtn.innerHTML = '<i class="fas fa-check"></i> Confirm Payment';
+            }
+        });
+    }
+});
 
 function setupFeeFilters() {
     const search = document.getElementById('feeSearch');
