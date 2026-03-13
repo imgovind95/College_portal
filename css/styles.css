@@ -800,7 +800,7 @@ img { max-width: 100%; display: block; }
     justify-content: center;
     animation: fadeIn 0.2s ease;
 }
-.modal-overlay.show { display: flex; }
+.modal-overlay.active { display: flex; }
 
 .modal {
     background: var(--bg-white);
@@ -1035,4 +1035,4 @@ img { max-width: 100%; display: block; }
     background: rgba(0,0,0,0.4);
     z-index: 99;
 }
-.sidebar-overlay.show { display: block; }
+.sidebar-overlay.active { display: block; }

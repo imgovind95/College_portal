@@ -5,6 +5,32 @@
 document.addEventListener('DOMContentLoaded', () => {
     loadFees();
     setupFeeFilters();
+
+    // Export button — download CSV
+    const exportBtn = document.getElementById('exportFeesBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            const data = window._feeStudents || getDefaultFeeData();
+            const header = 'Student ID,Name,Department,Semester,Fee Type,Amount,Status\n';
+            const csv = header + data.map(r =>
+                `${r.studentId},${r.name},${r.department},${r.semester},${r.feeType},${r.amount},${r.status}`
+            ).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'student_fees_export.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        });
+    }
+
+    // Print button
+    const printBtn = document.getElementById('printFeesBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', () => {
+            window.print();
+        });
+    }
 });
 
 async function loadFees() {
@@ -53,13 +79,69 @@ function renderFeeStats(stats) {
 function renderFeeTable(students) {
     const tbody = document.getElementById('feeTableBody');
     if (!tbody) return;
+    window._currentFeeList = students;
     const badge = s => ({ paid: 'badge-success', pending: 'badge-warning', overdue: 'badge-danger' })[s] || 'badge-muted';
-    tbody.innerHTML = students.map(r => `<tr>
+    tbody.innerHTML = students.map((r, i) => `<tr>
         <td><strong>${escapeHtml(r.studentId)}</strong></td><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.department)}</td><td>${escapeHtml(r.semester)}</td>
         <td>${escapeHtml(r.feeType)}</td><td class="fw-600">₹${r.amount.toLocaleString('en-IN')}</td>
         <td><span class="badge ${badge(r.status)}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span></td>
-        <td><button class="btn btn-xs btn-primary">Receipt</button></td>
+        <td><button class="btn btn-xs btn-primary" onclick="viewReceipt(${i})">Receipt</button></td>
     </tr>`).join('');
+}
+
+// View fee receipt in modal
+function viewReceipt(index) {
+    const data = window._currentFeeList || window._feeStudents || getDefaultFeeData();
+    const r = data[index];
+    if (!r) return;
+    const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    document.getElementById('detailModalTitle').textContent = 'Fee Receipt — ' + r.studentId;
+    document.getElementById('detailModalBody').innerHTML = `
+        <div style="border:2px solid var(--primary);border-radius:var(--radius-md);padding:24px;">
+            <div style="text-align:center;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:16px;">
+                <h3 style="color:var(--primary);font-size:1.1rem;">Government College — Fee Receipt</h3>
+                <p style="color:var(--text-muted);font-size:0.82rem;">Date: ${date}</p>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;font-size:0.88rem;margin-bottom:20px;">
+                <div><strong>Student ID:</strong> ${escapeHtml(r.studentId)}</div>
+                <div><strong>Name:</strong> ${escapeHtml(r.name)}</div>
+                <div><strong>Department:</strong> ${escapeHtml(r.department)}</div>
+                <div><strong>Semester:</strong> ${escapeHtml(r.semester)}</div>
+                <div><strong>Fee Type:</strong> ${escapeHtml(r.feeType)}</div>
+                <div><strong>Status:</strong> <span class="badge ${r.status === 'paid' ? 'badge-success' : r.status === 'overdue' ? 'badge-danger' : 'badge-warning'}">${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</span></div>
+            </div>
+            <div style="background:var(--primary-light);padding:14px 20px;border-radius:var(--radius);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:700;font-size:1rem;">Amount</span>
+                <span style="font-weight:800;font-size:1.2rem;color:var(--primary);">₹${r.amount.toLocaleString('en-IN')}</span>
+            </div>
+        </div>
+    `;
+    const actionBtn = document.getElementById('detailModalAction');
+    actionBtn.style.display = 'inline-flex';
+    actionBtn.innerHTML = '<i class="fas fa-download"></i> Download Receipt';
+    actionBtn.onclick = () => {
+        const content = `
+FEE RECEIPT — GOVERNMENT COLLEGE
+========================================
+Receipt Date : ${date}
+Student ID   : ${r.studentId}
+Name         : ${r.name}
+Department   : ${r.department}
+Semester     : ${r.semester}
+Fee Type     : ${r.feeType}
+Amount       : ₹${r.amount.toLocaleString('en-IN')}
+Status       : ${r.status.charAt(0).toUpperCase() + r.status.slice(1)}
+========================================
+This is a system-generated receipt.
+        `.trim();
+        const blob = new Blob([content], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Receipt_${r.studentId}.txt`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    };
+    openModal('detailViewModal');
 }
 
 function setupFeeFilters() {

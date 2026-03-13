@@ -25,6 +25,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function runPayroll() {
+    const month = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const totalNet = payrollData.reduce((sum, r) => sum + r.net, 0);
+    document.getElementById('detailModalTitle').textContent = 'Run Payroll — ' + month;
+    document.getElementById('detailModalBody').innerHTML = `
+        <div style="text-align:center;padding:20px 0;">
+            <div style="width:64px;height:64px;border-radius:50%;background:var(--success-light);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                <i class="fas fa-calculator" style="font-size:1.5rem;color:var(--success);"></i>
+            </div>
+            <h3 style="font-size:1.1rem;margin-bottom:8px;">Process Payroll for ${month}</h3>
+            <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:20px;">This will process salary payments for all ${payrollData.length} employees.</p>
+            <div style="background:var(--bg-body);padding:16px;border-radius:var(--radius);text-align:left;font-size:0.88rem;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Total Employees</span><strong>${payrollData.length}</strong></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Total Gross</span><strong>₹${payrollData.reduce((s, r) => s + r.basic + r.hra + r.da, 0).toLocaleString('en-IN')}</strong></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span>Total Deductions</span><strong class="text-danger">₹${payrollData.reduce((s, r) => s + r.deductions, 0).toLocaleString('en-IN')}</strong></div>
+                <div style="display:flex;justify-content:space-between;border-top:2px solid var(--border);padding-top:8px;"><span style="font-weight:700;">Net Payable</span><strong style="color:var(--primary);font-size:1.1rem;">₹${totalNet.toLocaleString('en-IN')}</strong></div>
+            </div>
+        </div>
+    `;
+    const actionBtn = document.getElementById('detailModalAction');
+    actionBtn.style.display = 'inline-flex';
+    actionBtn.innerHTML = '<i class="fas fa-check"></i> Confirm & Process';
+    actionBtn.onclick = () => {
+        alert('✅ Payroll processed successfully for ' + month + '!\nTotal disbursed: ₹' + totalNet.toLocaleString('en-IN'));
+        closeModal('detailViewModal');
+    };
+    openModal('detailViewModal');
+}
+
 function renderPayrollStats() {
     const c = document.getElementById('payrollStats');
     if (!c) return;
@@ -59,6 +88,23 @@ function renderPayrollTable() {
             <button class="btn btn-xs btn-secondary" title="Edit" onclick="editEmployee(${i})"><i class="fas fa-edit"></i></button>
         </td>
     </tr>`).join('');
+}
+
+function renderPayrollTableFiltered(data) {
+    const tbody = document.getElementById('payrollTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = data.map((r) => {
+        const idx = payrollData.indexOf(r);
+        return `<tr>
+        <td><strong>${r.id}</strong></td><td>${r.name}</td><td><span class="badge badge-primary">${r.desig}</span></td><td>${r.dept}</td>
+        <td>₹${r.basic.toLocaleString('en-IN')}</td><td>₹${r.hra.toLocaleString('en-IN')}</td><td>₹${r.da.toLocaleString('en-IN')}</td>
+        <td class="text-danger">-₹${r.deductions.toLocaleString('en-IN')}</td><td class="fw-700">₹${r.net.toLocaleString('en-IN')}</td>
+        <td>
+            <button class="btn btn-xs btn-secondary" title="Salary Slip" onclick="viewSalarySlip(${idx})"><i class="fas fa-file-alt"></i></button>
+            <button class="btn btn-xs btn-secondary" title="Edit" onclick="editEmployee(${idx})"><i class="fas fa-edit"></i></button>
+        </td>
+    </tr>`;
+    }).join('');
 }
 
 // Current slip data for download
