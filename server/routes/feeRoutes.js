@@ -37,6 +37,74 @@ router.post('/', authorize('accountant', 'admin'), async (req, res) => {
     } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
+// @route   POST /api/fees/bulk-import
+// @desc    Bulk import student fee records from CSV
+router.post('/bulk-import', authorize('accountant', 'admin'), async (req, res) => {
+    try {
+        const { records } = req.body;
+        if (!Array.isArray(records) || records.length === 0) {
+            return res.status(400).json({ message: 'No records provided. Send { records: [...] }' });
+        }
+
+        const requiredFields = ['studentId', 'name', 'department', 'semester', 'feeType', 'amount'];
+        const validStatuses = ['paid', 'pending', 'overdue'];
+        const errors = [];
+        const validRecords = [];
+
+        for (let i = 0; i < records.length; i++) {
+            const r = records[i];
+            const missing = requiredFields.filter(f => !r[f] && r[f] !== 0);
+            if (missing.length > 0) {
+                errors.push({ row: i + 1, message: `Missing fields: ${missing.join(', ')}` });
+                continue;
+            }
+            const amount = Number(r.amount);
+            if (isNaN(amount) || amount < 0) {
+                errors.push({ row: i + 1, message: 'Invalid amount' });
+                continue;
+            }
+            validRecords.push({
+                studentId: String(r.studentId).trim(),
+                name: String(r.name).trim(),
+                department: String(r.department).trim(),
+                semester: String(r.semester).trim(),
+                feeType: String(r.feeType).trim(),
+                amount,
+                status: validStatuses.includes(String(r.status || '').toLowerCase()) ? String(r.status).toLowerCase() : 'pending'
+            });
+        }
+
+        let inserted = 0;
+        let duplicates = 0;
+        if (validRecords.length > 0) {
+            try {
+                const result = await Student.insertMany(validRecords, { ordered: false });
+                inserted = result.length;
+            } catch (bulkErr) {
+                if (bulkErr.code === 11000 || (bulkErr.writeErrors && bulkErr.writeErrors.length)) {
+                    // Some inserted, some duplicates
+                    inserted = bulkErr.insertedDocs ? bulkErr.insertedDocs.length : (validRecords.length - (bulkErr.writeErrors ? bulkErr.writeErrors.length : 0));
+                    duplicates = bulkErr.writeErrors ? bulkErr.writeErrors.length : 0;
+                } else {
+                    throw bulkErr;
+                }
+            }
+        }
+
+        res.json({
+            message: 'Bulk import completed',
+            total: records.length,
+            inserted,
+            duplicates,
+            validationErrors: errors.length,
+            errors: errors.slice(0, 20) // send max 20 error details
+        });
+    } catch (err) {
+        console.error('Bulk import error:', err);
+        res.status(500).json({ message: 'Bulk import failed: ' + err.message });
+    }
+});
+
 // @route   PUT /api/fees/:id
 router.put('/:id', authorize('accountant', 'admin'), async (req, res) => {
     try {

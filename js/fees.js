@@ -169,3 +169,135 @@ function setupFeeFilters() {
     if (deptFilter) deptFilter.addEventListener('change', applyFilters);
     if (statusFilter) statusFilter.addEventListener('change', applyFilters);
 }
+
+/* ========================================================================
+   CSV Bulk Import Logic
+   ======================================================================== */
+
+// Simple CSV parser — handles quoted fields and commas inside quotes
+function parseCSV(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+        const vals = [];
+        let current = '';
+        let inQuote = false;
+        for (const ch of lines[i]) {
+            if (ch === '"') { inQuote = !inQuote; continue; }
+            if (ch === ',' && !inQuote) { vals.push(current.trim()); current = ''; continue; }
+            current += ch;
+        }
+        vals.push(current.trim());
+        if (vals.length >= headers.length) {
+            const obj = {};
+            headers.forEach((h, idx) => { obj[h] = vals[idx] || ''; });
+            rows.push(obj);
+        }
+    }
+    return rows;
+}
+
+// Parsed data holder
+let _pendingCsvRecords = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.getElementById('csvFileInput');
+    const importBtn = document.getElementById('importCsvBtn');
+    const sampleBtn = document.getElementById('downloadSampleCsvBtn');
+    const previewArea = document.getElementById('csvPreviewArea');
+    const previewHead = document.getElementById('csvPreviewHead');
+    const previewBody = document.getElementById('csvPreviewBody');
+    const rowCount = document.getElementById('csvRowCount');
+    const statusArea = document.getElementById('importStatusArea');
+
+    // Download sample CSV
+    if (sampleBtn) {
+        sampleBtn.addEventListener('click', () => {
+            const sample = `studentId,name,department,semester,feeType,amount,status
+STU-2026-101,Rahul Sharma,Computer Science,Semester 2,Tuition Fee,24500,pending
+STU-2026-102,Sneha Verma,Electronics,Semester 4,Lab Fee,8000,paid
+STU-2026-103,Amit Yadav,Mechanical,Semester 6,Exam Fee,5500,overdue`;
+            const blob = new Blob([sample], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'sample_student_fees.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        });
+    }
+
+    // File selected → parse & preview
+    if (fileInput) {
+        fileInput.addEventListener('change', () => {
+            statusArea.style.display = 'none';
+            const file = fileInput.files[0];
+            if (!file) { previewArea.style.display = 'none'; importBtn.disabled = true; _pendingCsvRecords = []; return; }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const records = parseCSV(e.target.result);
+                _pendingCsvRecords = records;
+                if (records.length === 0) {
+                    previewArea.style.display = 'none';
+                    importBtn.disabled = true;
+                    alert('CSV file is empty or format is incorrect. Please use the sample format.');
+                    return;
+                }
+                // Show preview
+                const headers = Object.keys(records[0]);
+                previewHead.innerHTML = '<tr>' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr>';
+                const previewRows = records.slice(0, 5);
+                previewBody.innerHTML = previewRows.map(r => '<tr>' + headers.map(h => `<td>${escapeHtml(r[h] || '')}</td>`).join('') + '</tr>').join('');
+                rowCount.textContent = `Total ${records.length} record(s) found in file.`;
+                previewArea.style.display = 'block';
+                importBtn.disabled = false;
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    // Upload & Import
+    if (importBtn) {
+        importBtn.addEventListener('click', async () => {
+            if (_pendingCsvRecords.length === 0) return;
+            importBtn.disabled = true;
+            importBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+            statusArea.style.display = 'none';
+
+            try {
+                const result = await api('/fees/bulk-import', {
+                    method: 'POST',
+                    body: JSON.stringify({ records: _pendingCsvRecords })
+                });
+
+                // Show result summary
+                const isSuccess = result.inserted > 0;
+                statusArea.style.display = 'block';
+                statusArea.style.background = isSuccess ? '#d4edda' : '#fff3cd';
+                statusArea.style.color = isSuccess ? '#155724' : '#856404';
+                statusArea.innerHTML = `
+                    <p style="font-weight:700;margin:0 0 6px;"><i class="fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> Import ${isSuccess ? 'Successful' : 'Completed'}</p>
+                    <p style="margin:0;font-size:0.88rem;">
+                        Total rows: <strong>${result.total}</strong> &nbsp;|&nbsp;
+                        Inserted: <strong style="color:#28a745;">${result.inserted}</strong> &nbsp;|&nbsp;
+                        Duplicates skipped: <strong style="color:#dc3545;">${result.duplicates}</strong> &nbsp;|&nbsp;
+                        Validation errors: <strong style="color:#dc3545;">${result.validationErrors}</strong>
+                    </p>
+                    ${result.errors && result.errors.length > 0 ? '<p style="margin:8px 0 0;font-size:0.82rem;">Errors: ' + result.errors.map(e => `Row ${e.row}: ${escapeHtml(e.message)}`).join(', ') + '</p>' : ''}
+                `;
+
+                // Refresh the fee table
+                if (result.inserted > 0) loadFees();
+            } catch (err) {
+                statusArea.style.display = 'block';
+                statusArea.style.background = '#f8d7da';
+                statusArea.style.color = '#721c24';
+                statusArea.innerHTML = `<p style="font-weight:700;margin:0;"><i class="fas fa-times-circle"></i> Import Failed</p><p style="margin:4px 0 0;font-size:0.88rem;">${escapeHtml(err.message)}</p>`;
+            } finally {
+                importBtn.disabled = false;
+                importBtn.innerHTML = '<i class="fas fa-upload"></i> Upload & Import';
+            }
+        });
+    }
+});
