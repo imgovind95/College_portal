@@ -10,8 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
-    <!-- Google Identity Services -->
+    <!-- [GOOGLE_AUTH_START] — Commented out: Google Identity Services script
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    [GOOGLE_AUTH_END] -->
     <style>
         /* === Compact Login — fits in single viewport === */
         .login-body { min-height: 100vh; overflow: hidden; }
@@ -63,6 +64,25 @@
         }
         .auth-message.error { color: #dc2626; background: #fef2f2; display: block; }
         .auth-message.success { color: #16a34a; background: #f0fdf4; display: block; }
+
+        /* Mobile overrides for compact login styles */
+        @media (max-width: 768px) {
+            .login-body { min-height: auto; overflow: auto; }
+            .login-container { max-height: none; }
+            .login-form-panel { padding: 20px 16px; }
+            .login-form-header { margin-bottom: 12px; }
+            .login-form-header h2 { font-size: 1.15rem; }
+            .login-form-header p { font-size: 0.78rem; }
+            .btn-login { padding: 10px; font-size: 0.85rem; }
+            .auth-tabs { margin-bottom: 10px; }
+            .auth-tab { font-size: 0.78rem; padding: 7px 0; }
+        }
+        @media (max-width: 480px) {
+            .login-form-panel { padding: 20px 14px; }
+            .google-btn-container { min-height: 40px; }
+            .auth-divider { margin: 8px 0; }
+            .login-form .form-group { margin-bottom: 8px; }
+        }
     </style>
 </head>
 <body class="login-body">
@@ -97,10 +117,10 @@
                     <p id="authSubtitle">Sign in to access your financial dashboard</p>
                 </div>
 
-                <!-- Google Sign-In Button (rendered by Google Identity Services) -->
+                <!-- [GOOGLE_AUTH_START] — Commented out: Google Sign-In Button & Divider
                 <div class="google-btn-container" id="googleSignInBtn"></div>
-
                 <div class="auth-divider"><span>or</span></div>
+                [GOOGLE_AUTH_END] -->
 
                 <!-- Tabs: Sign In / Create Account -->
                 <div class="auth-tabs">
@@ -304,6 +324,7 @@
             }
         });
 
+        /* [GOOGLE_AUTH_START] — Commented out: Google Sign-In JavaScript
         // ==========================================
         // GOOGLE SIGN-IN
         // ==========================================
@@ -360,7 +381,8 @@
                     initGoogleSignIn(d.clientId);
                 }
             })
-            .catch(() => { /* Google auth will just not work if no client ID */ });
+            .catch(() => {});
+        [GOOGLE_AUTH_END] */
 
         // ==========================================
         // Event Listeners (no inline onclick — CSP safe)
